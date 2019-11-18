@@ -19,9 +19,9 @@ public class SudokuGenerator {
 	public static void main(String[] args) {
 		Random rand = new Random();
 		int size = 3;
-
-		BufferedImage sudokuSheet = generateSheet(5, 7, size, 1834 / 31f, (int) Math.pow(size, 5), rand,
-				new Font("Comic Neue", 1, Math.round(46 *  (int) Math.ceil(1834 / 31f / 60))));
+		
+		BufferedImage sudokuSheet = generateSheet(4, 6, size, 60, (int) Math.pow(size, 5), rand,
+				new Font("Comic Neue", 1, 48));
 
 		try {
 			ImageIO.write(sudokuSheet, "png", new File("sudoku.png"));

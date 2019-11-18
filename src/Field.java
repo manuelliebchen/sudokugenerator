@@ -12,7 +12,17 @@ public class Field {
 		this.y = y;
 	}
 	
+	public Field(int block, int index, int size) {
+		y = size * (block / size) + (index / size);
+		x = size * (block % size) + (index % size);
+	}
+	
 	int getBlock(int size) {
-		return y / size + x / (size * size);
+		return x / size + size * (y / size);
+	}
+	
+	@Override
+	public String toString() {
+		return "Field[ " + String.valueOf(x) + ", " +  String.valueOf(y) + "]";
 	}
 }

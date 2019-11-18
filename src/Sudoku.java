@@ -26,13 +26,6 @@ public class Sudoku {
 	 */
 	boolean[][] locked;
 
-	/**
-	 * Fields for row, column and block condition;
-	 */
-	boolean[][] rowCondition;
-	boolean[][] columnCondition;
-	boolean[][] blockCondition;
-
 	
 	/**
 	 * Constructs a full sudoku field without empyt fields.
@@ -42,16 +35,21 @@ public class Sudoku {
 		sizeSquare = size * size;
 		this.size = size;
 		boolean reset = false;
+		
 		do {
 			reset = false;
 			sudoku = new int[sizeSquare][sizeSquare];
-			rowCondition = new boolean[sizeSquare][sizeSquare];
-			columnCondition = new boolean[sizeSquare][sizeSquare];
-			blockCondition = new boolean[sizeSquare][sizeSquare];
+
+			locked = new boolean[this.sizeSquare][this.sizeSquare];
+			for (int x = 0; x < sudoku.length; x++) {
+				for (int y = 0; y < sudoku[0].length; y++) {
+					this.locked[x][y] = true;
+				}
+			}
 
 			for (int x = 0; x < sudoku.length && !reset; x++) {
 				for (int y = 0; y < sudoku[0].length && !reset; y++) {
-					int zFeld = y / size + x / size * size;
+					Field field = new Field(x,y);
 					int counter = -1;
 					do {
 						counter++;
@@ -60,16 +58,11 @@ public class Sudoku {
 							reset = true;
 							break;
 						}
-					} while (rowCondition[x][sudoku[x][y]] || columnCondition[y][sudoku[x][y]]
-							|| blockCondition[zFeld][sudoku[x][y]]);
-					rowCondition[x][sudoku[x][y]] = true;
-					columnCondition[y][sudoku[x][y]] = true;
-					blockCondition[zFeld][sudoku[x][y]] = true;
+					} while (!checkConditions(field, sudoku[x][y]));
+					locked[x][y] = false;
 				}
 			}
 		} while (reset);
-
-		locked = new boolean[this.sizeSquare][this.sizeSquare];
 	}
 
 	/**
@@ -83,52 +76,29 @@ public class Sudoku {
 
 		locked = new boolean[sizeSquare][sizeSquare];
 
-		rowCondition = new boolean[sizeSquare][sizeSquare];
-		columnCondition = new boolean[sizeSquare][sizeSquare];
-		blockCondition = new boolean[sizeSquare][sizeSquare];
-
 		for (int x = 0; x < sudoku.length; x++) {
 			for (int y = 0; y < sudoku[0].length; y++) {
 				this.sudoku[x][y] = tobecopied.sudoku[x][y];
 				this.locked[x][y] = tobecopied.locked[x][y];
-				if (!locked[x][y]) {
-					rowCondition[x][sudoku[x][y]] = true;
-					columnCondition[y][sudoku[x][y]] = true;
-					blockCondition[y / size + x / size * size][sudoku[x][y]] = true;
-				}
 			}
 		}
 	}
-
-	/**
-	 * Locks a field
-	 * @param field to be locked
-	 */
-	void lockField(Field field) {
-		locked[field.x][field.y] = true;
-
-		rowCondition[field.x][sudoku[field.x][field.y]] = false;
-		columnCondition[field.y][sudoku[field.x][field.y]] = false;
-		blockCondition[field.y / size + field.x / size * size][sudoku[field.x][field.y]] = false;
-	}
-
-	/**
-	 * Unlocks a field.
-	 * @param field to be unlocked
-	 */
-	void unlockField(Field field) {
-		locked[field.x][field.y] = false;
-
-		rowCondition[field.x][sudoku[field.x][field.y]] = true;
-		columnCondition[field.y][sudoku[field.x][field.y]] = true;
-		blockCondition[field.y / size + field.x / size * size][sudoku[field.x][field.y]] = true;
-	}
 	
-	/**
-	 * Checks if given field is locked.
-	 */
-	boolean isLocked(Field field) {
-		return locked[field.x][field.y];
+	boolean checkConditions(Field field, int number) {
+		int block = field.getBlock(size);
+		for(int i = 0; i < sizeSquare; ++i) {
+			if(!locked[field.x][i] && sudoku[field.x][i] == number) {
+				return false;
+			}
+			if(!locked[i][field.y] && sudoku[i][field.y] == number) {
+				return false;
+			}
+			Field blockfield = new Field(block, i, size);
+			if(!locked[blockfield.x][blockfield.y] && sudoku[blockfield.x][blockfield.y] == number) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -137,9 +107,8 @@ public class Sudoku {
 	 */
 	List<Integer> getOptions(Field field) {
 		List<Integer> posibles = new ArrayList<>(sizeSquare);
-		int block = field.getBlock(size);
 		for (int i = 0; i < sizeSquare; ++i) {
-			if (!rowCondition[field.x][i] && !columnCondition[field.y][i] && !blockCondition[block][i]) {
+			if (checkConditions(field, i)) {
 				posibles.add(i);
 			}
 		}
@@ -154,7 +123,7 @@ public class Sudoku {
 		for (int x = 0; x < sizeSquare; x++) {
 			for (int y = 0; y < sizeSquare; y++) {
 				Field move = new Field(x,y);
-				if (isLocked(move)) {
+				if (locked[move.x][move.y]) {
 					if(getOptions(move).size() == 1) {
 						field.add(move);
 					}
@@ -197,11 +166,11 @@ public class Sudoku {
 			nextmove = new Field(x, y);
 			
 			Sudoku copy = new Sudoku(this);
-			copy.lockField(nextmove);
+			copy.locked[nextmove.x][nextmove.y] = true;
 			if (!copy.uniqueSolvable()) {
 				count++;
 			} else {
-				lockField(nextmove);
+				locked[nextmove.x][nextmove.y] = true;
 			}
 		} while (count < tries);
 		return locked;
@@ -228,7 +197,7 @@ public class Sudoku {
 			}
 
 			for (Field move : moves) {
-				copy.unlockField(move);
+				copy.locked[move.x][move.y] = false;
 			}
 		} while (fieldsLeft);
 		return true;
