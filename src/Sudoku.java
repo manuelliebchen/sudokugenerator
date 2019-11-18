@@ -10,6 +10,7 @@ import java.util.Random;
 
 /**
  * Sudoku field.
+ * 
  * @author Manuel Liebchen (hallo@manuelliebchen.de)
  */
 public class Sudoku {
@@ -26,43 +27,58 @@ public class Sudoku {
 	 */
 	boolean[][] locked;
 
-	
 	/**
 	 * Constructs a full sudoku field without empyt fields.
+	 * 
 	 * @param size of a block
 	 */
-	Sudoku(int size, Random rand) {
+	Sudoku(int size, Random rand, int tries) {
 		sizeSquare = size * size;
 		this.size = size;
-		boolean reset = false;
-		
+		boolean reset = true;
+
+		List<Field> lockedFiedes = new ArrayList<>();
 		do {
-			reset = false;
-			sudoku = new int[sizeSquare][sizeSquare];
+			if (reset) {
+				reset = false;
+				sudoku = new int[sizeSquare][sizeSquare];
 
-			locked = new boolean[this.sizeSquare][this.sizeSquare];
-			for (int x = 0; x < sudoku.length; x++) {
-				for (int y = 0; y < sudoku[0].length; y++) {
-					this.locked[x][y] = true;
+				locked = new boolean[this.sizeSquare][this.sizeSquare];
+				for (int x = 0; x < sudoku.length; x++) {
+					for (int y = 0; y < sudoku[0].length; y++) {
+						this.locked[x][y] = true;
+					}
 				}
-			}
 
-			for (int x = 0; x < sudoku.length && !reset; x++) {
-				for (int y = 0; y < sudoku[0].length && !reset; y++) {
-					Field field = new Field(x,y);
-					int counter = -1;
-					do {
-						counter++;
-						sudoku[x][y] = rand.nextInt(sizeSquare);
-						if (counter >= Math.pow(2, sizeSquare)) {
-							reset = true;
-							break;
-						}
-					} while (!checkConditions(field, sudoku[x][y]));
-					locked[x][y] = false;
-				}
+				lockedFiedes = getLockedFields();
 			}
-		} while (reset);
+//			int fieldIndex = rand.nextInt(lockedFiedes.size());
+			int fieldIndex = 0;
+			Field field = lockedFiedes.get(fieldIndex);
+			lockedFiedes.remove(fieldIndex);
+			List<Integer> posibles = getOptions(field);
+			if(posibles.isEmpty()) {
+				reset = true;
+				continue;
+			}
+			sudoku[field.x][field.y] = posibles.get(rand.nextInt(posibles.size()));
+			locked[field.x][field.y] = false;
+		} while (!lockedFiedes.isEmpty());
+//			for (int x = 0; x < sudoku.length && !reset; x++) {
+//				for (int y = 0; y < sudoku[0].length && !reset; y++) {
+//					Field field = new Field(x,y);
+//					int counter = -1;
+//					do {
+//						counter++;
+//						sudoku[x][y] = rand.nextInt(sizeSquare);
+//						if (counter >= Math.pow(2, sizeSquare)) {
+//							reset = true;
+//							break;
+//						}
+//					} while (!checkConditions(field, sudoku[x][y]));
+//					locked[x][y] = false;
+//				}
+//			}
 	}
 
 	/**
@@ -83,18 +99,18 @@ public class Sudoku {
 			}
 		}
 	}
-	
+
 	boolean checkConditions(Field field, int number) {
 		int block = field.getBlock(size);
-		for(int i = 0; i < sizeSquare; ++i) {
-			if(!locked[field.x][i] && sudoku[field.x][i] == number) {
+		for (int i = 0; i < sizeSquare; ++i) {
+			if (!locked[field.x][i] && sudoku[field.x][i] == number) {
 				return false;
 			}
-			if(!locked[i][field.y] && sudoku[i][field.y] == number) {
+			if (!locked[i][field.y] && sudoku[i][field.y] == number) {
 				return false;
 			}
 			Field blockfield = new Field(block, i, size);
-			if(!locked[blockfield.x][blockfield.y] && sudoku[blockfield.x][blockfield.y] == number) {
+			if (!locked[blockfield.x][blockfield.y] && sudoku[blockfield.x][blockfield.y] == number) {
 				return false;
 			}
 		}
@@ -103,6 +119,7 @@ public class Sudoku {
 
 	/**
 	 * Get possible numbers for given field.
+	 * 
 	 * @return List of these numbers.
 	 */
 	List<Integer> getOptions(Field field) {
@@ -122,9 +139,9 @@ public class Sudoku {
 		List<Field> field = new ArrayList<>();
 		for (int x = 0; x < sizeSquare; x++) {
 			for (int y = 0; y < sizeSquare; y++) {
-				Field move = new Field(x,y);
+				Field move = new Field(x, y);
 				if (locked[move.x][move.y]) {
-					if(getOptions(move).size() == 1) {
+					if (getOptions(move).size() == 1) {
 						field.add(move);
 					}
 				}
@@ -132,7 +149,7 @@ public class Sudoku {
 		}
 		return field;
 	}
-	
+
 	/**
 	 * @return List of locked fields.
 	 */
@@ -140,37 +157,51 @@ public class Sudoku {
 		List<Field> fields = new ArrayList<>();
 		for (int x = 0; x < sizeSquare; x++) {
 			for (int y = 0; y < sizeSquare; y++) {
-				if(locked[x][y]) {
-					fields.add(new Field(x,y));
+				if (locked[x][y]) {
+					fields.add(new Field(x, y));
 				}
 			}
 		}
 		return fields;
 	}
-	
+
+	/**
+	 * @return List of locked fields.
+	 */
+	List<Field> getUnlockedFields() {
+		List<Field> fields = new ArrayList<>();
+		for (int x = 0; x < sizeSquare; x++) {
+			for (int y = 0; y < sizeSquare; y++) {
+				if (!locked[x][y]) {
+					fields.add(new Field(x, y));
+				}
+			}
+		}
+		return fields;
+	}
+
 	/**
 	 * Deletes fields of the sudoku to make it a puzzel.
-	 * @param rand Random object to be used.
+	 * 
+	 * @param rand  Random object to be used.
 	 * @param tries of how often should it try to delete a field
 	 * @return
 	 */
 	boolean[][] aussortieren(Random rand, int tries) {
 		Field nextmove = null;
 		int count = 0;
+		List<Field> unlocked = getUnlockedFields();
 		do {
-			int x, y;
-			do {
-				x = rand.nextInt(sizeSquare);
-				y = rand.nextInt(sizeSquare);
-			} while (locked[x][y]);
-			nextmove = new Field(x, y);
-			
+			int fieldIndex = rand.nextInt(unlocked.size());
+			nextmove = unlocked.get(fieldIndex);
+
 			Sudoku copy = new Sudoku(this);
 			copy.locked[nextmove.x][nextmove.y] = true;
 			if (!copy.uniqueSolvable()) {
 				count++;
 			} else {
 				locked[nextmove.x][nextmove.y] = true;
+				unlocked.remove(fieldIndex);
 			}
 		} while (count < tries);
 		return locked;
@@ -184,7 +215,7 @@ public class Sudoku {
 		if (copy.getLockedFields().isEmpty()) {
 			return true;
 		}
-		
+
 		List<Field> moves = new ArrayList<>();
 		boolean fieldsLeft;
 		do {
@@ -205,6 +236,7 @@ public class Sudoku {
 
 	/**
 	 * Renders the sudoku with a given Graphics objekt
+	 * 
 	 * @param g
 	 * @param cellSize
 	 */
@@ -218,15 +250,15 @@ public class Sudoku {
 
 		g.setColor(Color.BLACK);
 
-		((Graphics2D) g).setStroke(new BasicStroke(Math.round(3 * pixelSize)));
+		((Graphics2D) g).setStroke(new BasicStroke(3 * pixelSize));
 		g.drawRect(0, 0, Math.round(sudokuSize), Math.round(sudokuSize));
-		((Graphics2D) g).setStroke(new BasicStroke(Math.round(2 * pixelSize)));
+		((Graphics2D) g).setStroke(new BasicStroke(2 * pixelSize));
 		int size = (int) Math.sqrt(sizeSquar);
 		for (int i = 0; i < sizeSquar - 1; ++i) {
 			if (i % size == 2) {
-				((Graphics2D) g).setStroke(new BasicStroke(Math.round(2 * pixelSize)));
+				((Graphics2D) g).setStroke(new BasicStroke(2 * pixelSize));
 			} else {
-				((Graphics2D) g).setStroke(new BasicStroke(Math.round(1 * pixelSize)));
+				((Graphics2D) g).setStroke(new BasicStroke(1 * pixelSize));
 			}
 			g.drawLine(0, Math.round((i + 1) * cellSize), Math.round(sudokuSize), Math.round((i + 1) * cellSize));
 			g.drawLine(Math.round((i + 1) * cellSize), 0, Math.round((i + 1) * cellSize), Math.round(sudokuSize));
@@ -248,7 +280,7 @@ public class Sudoku {
 	@Override
 	public String toString() {
 		String output = "";
-		for(int k = 0; k < sizeSquare * 2 +1; ++k) {
+		for (int k = 0; k < sizeSquare * 2 + 1; ++k) {
 			output += "-";
 		}
 		output += "\n";
@@ -263,8 +295,8 @@ public class Sudoku {
 				}
 			}
 			output += "\n";
-			if(i % size == 2) {
-				for(int k = 0; k < sizeSquare * 2 +1; ++k) {
+			if (i % size == 2) {
+				for (int k = 0; k < sizeSquare * 2 + 1; ++k) {
 					output += "-";
 				}
 				output += "\n";

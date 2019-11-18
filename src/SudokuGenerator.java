@@ -60,7 +60,7 @@ public class SudokuGenerator {
 						Math.round(cellSize * (sizeSquare + 1) * j + cellSize));
 				((Graphics2D) g).setTransform(af);
 
-				Sudoku sudoku = new Sudoku(size, rand);
+				Sudoku sudoku = new Sudoku(size, rand, tries);
 				sudoku.aussortieren(rand, tries);
 				sudoku.render(g, cellSize, font);
 			}
